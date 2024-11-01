@@ -2,6 +2,7 @@ package jenkins
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 )
@@ -13,8 +14,10 @@ const (
 )
 
 type Config struct {
-	Url  string
-	Jobs []string
+	Url   string
+	Jobs  []string
+	User  string
+	Token string
 }
 
 var config *Config
@@ -34,7 +37,7 @@ func ReadConf(path string) (Config, error) {
 	}
 
 	var c Config
-	err = json.Unmarshal([]byte(cfg), &c)
+	err = json.Unmarshal(cfg, &c)
 	if err != nil {
 		return Config{}, err
 	}
@@ -45,7 +48,7 @@ func GetConfig() Config {
 	if config == nil {
 		c, err := ReadConf(DefaultConfPath())
 		if err != nil {
-			os.Exit(-1)
+			panic(fmt.Sprintf("Error in reading config file: %v", err.Error()))
 		} else {
 			config = &c
 		}
@@ -63,14 +66,20 @@ func JobsList() []string {
 }
 
 func Job(url string) string {
+	c := GetConfig()
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
-	if err == nil {
-		return "error in creating request"
+	if err != nil {
+		return err.Error()
 	}
+	req.SetBasicAuth(c.User, c.Token)
 	resp, err := client.Do(req)
-	if err == nil {
-		return "error"
+	if err != nil {
+		return err.Error()
 	}
+	if resp.StatusCode != 200 {
+		return fmt.Sprintf("Wrong status code: %d", resp.StatusCode)
+	}
+	return "ok"
 }

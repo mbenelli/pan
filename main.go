@@ -14,4 +14,9 @@ func main() {
 
 	jobs := jenkins.JobsList()
 	fmt.Println(jobs)
+	jUrl := jobs[0]
+	fmt.Println(jUrl)
+	j := jenkins.Job(jobs[0])
+	fmt.Println(j)
+
 }
